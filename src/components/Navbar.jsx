@@ -32,7 +32,7 @@ const Navbar = () => {
             LabourLawGPT
           </span>
         </div>
-
+        {/* navbar */}
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <NavLink
             to="/"
