@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, ChevronRight, Gavel, RefreshCw, Loader2 } from 'lucide-react';
+import { Send, User, ChevronRight, Gavel, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import LegalReport from '../components/LegalReport';
 
 const ChatPage = () => {
@@ -196,8 +196,9 @@ const ChatPage = () => {
                                         ) : (
                                             // FLEXIBLE RENDERING:
                                             // 1. If it's a greeting or general message, show a simple bubble
-                                            // 2. If it has structured legal keys, show the LegalReport
-                                            // 3. Fallback to string/JSON rendering
+                                            // 2. If it's abusive or harmful, show a warning
+                                            // 3. If it has structured legal keys, show the LegalReport
+                                            // 4. Fallback to string/JSON rendering
                                             (typeof msg.content === 'object' && msg.content && msg.content.type === 'greeting_or_general') ? (
                                                 <div style={{
                                                     display: 'inline-block',
@@ -210,6 +211,23 @@ const ChatPage = () => {
                                                     border: '1px solid var(--border-color)'
                                                 }}>
                                                     {msg.content.answer}
+                                                </div>
+                                            ) : (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? (
+                                                <div style={{
+                                                    display: 'inline-block',
+                                                    backgroundColor: '#fef2f2',
+                                                    padding: '16px 20px',
+                                                    borderRadius: '12px',
+                                                    color: '#991b1b',
+                                                    fontSize: '0.95rem',
+                                                    lineHeight: 1.6,
+                                                    border: '1px solid #fecaca',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px'
+                                                }}>
+                                                    <AlertTriangle size={20} color="#dc2626" />
+                                                    <span>{msg.content.answer || "I cannot respond to this query as it violates our safety policies."}</span>
                                                 </div>
                                             ) : (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
                                                 <LegalReport data={msg.content} />

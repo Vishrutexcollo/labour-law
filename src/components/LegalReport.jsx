@@ -56,6 +56,27 @@ const LegalReport = ({ data }) => {
                         {hasContent(bare_act.act) && <p style={{ fontWeight: 600, fontSize: '1rem', color: '#1e40af' }}>{bare_act.act}</p>}
                         {hasContent(bare_act.section) && <p style={{ fontWeight: 500, color: '#1e3a8a', marginTop: '4px' }}>Section: {bare_act.section}</p>}
                         {hasContent(bare_act.summary) && <p style={{ marginTop: '8px', fontSize: '0.95rem', color: '#1e40af', lineHeight: 1.5 }}>{bare_act.summary}</p>}
+
+                        {/* New Evidence Field */}
+                        {hasContent(bare_act.evidence) && (
+                            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.025em' }}>
+                                    Supporting Evidence
+                                </p>
+                                {bare_act.evidence.map((item, idx) => (
+                                    <div key={idx} style={{ marginBottom: idx === bare_act.evidence.length - 1 ? 0 : '12px' }}>
+                                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: '#3b82f6', marginBottom: '4px' }}>
+                                            <span>Doc: {item.doc_id}</span>
+                                            <span>•</span>
+                                            <span>Section: {item.section}</span>
+                                        </div>
+                                        <p style={{ fontSize: '0.9rem', color: '#1e3a8a', fontStyle: 'italic', backgroundColor: 'rgba(255,255,255,0.5)', padding: '8px', borderRadius: '4px' }}>
+                                            "{item.snippet}"
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
