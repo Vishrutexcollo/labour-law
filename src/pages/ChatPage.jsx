@@ -60,33 +60,36 @@ const ChatPage = () => {
 
             let data = await response.json();
 
-            // Handle n8n returning an array
-            if (Array.isArray(data) && data.length > 0) {
-                data = data[0];
-            }
+            // Recursive function to strip away all layers (arrays, stringified JSON, "final"/"output" keys)
+            const deepUnwrap = (val) => {
+                let current = val;
 
-            // Robust extraction of the core response
-            let finalContent = data;
+                // 1. Handle Array
+                if (Array.isArray(current) && current.length > 0) {
+                    return deepUnwrap(current[0]);
+                }
 
-            // If it's a string that looks like JSON, try to parse it
-            if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
-                try {
-                    data = JSON.parse(data);
-                    finalContent = data;
-                } catch (e) { }
-            }
-
-            if (data && typeof data === 'object') {
-                if (data.final) {
-                    finalContent = data.final;
-                } else if (data.output) {
-                    if (typeof data.output === 'object' && data.output.final) {
-                        finalContent = data.output.final;
-                    } else {
-                        finalContent = data.output;
+                // 2. Handle Stringified JSON
+                if (typeof current === 'string' && (current.trim().startsWith('{') || current.trim().startsWith('['))) {
+                    try {
+                        const parsed = JSON.parse(current);
+                        return deepUnwrap(parsed);
+                    } catch (e) {
+                        // If parsing fails, treat as normal string
+                        return current;
                     }
                 }
-            }
+
+                // 3. Handle Object wrappers
+                if (current && typeof current === 'object') {
+                    if (current.final !== undefined) return deepUnwrap(current.final);
+                    if (current.output !== undefined) return deepUnwrap(current.output);
+                }
+
+                return current;
+            };
+
+            const finalContent = deepUnwrap(data);
 
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
@@ -191,9 +194,25 @@ const ChatPage = () => {
                                                 {msg.text}
                                             </div>
                                         ) : (
-                                            // FLEXIBLE RENDERING: Only use LegalReport if there's structured data
-                                            (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.final || msg.content.key_points || (msg.content.output && typeof msg.content.output === 'object'))) ? (
-                                                <LegalReport data={msg.content.final || msg.content.output?.final || msg.content.output || msg.content} />
+                                            // FLEXIBLE RENDERING:
+                                            // 1. If it's a greeting or general message, show a simple bubble
+                                            // 2. If it has structured legal keys, show the LegalReport
+                                            // 3. Fallback to string/JSON rendering
+                                            (typeof msg.content === 'object' && msg.content && msg.content.type === 'greeting_or_general') ? (
+                                                <div style={{
+                                                    display: 'inline-block',
+                                                    backgroundColor: '#f8fafc',
+                                                    padding: '14px 20px',
+                                                    borderRadius: '4px 20px 20px 20px',
+                                                    color: 'var(--text-primary)',
+                                                    fontSize: '1rem',
+                                                    lineHeight: 1.6,
+                                                    border: '1px solid var(--border-color)'
+                                                }}>
+                                                    {msg.content.answer}
+                                                </div>
+                                            ) : (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
+                                                <LegalReport data={msg.content} />
                                             ) : (
                                                 <div style={{
                                                     display: 'inline-block',
