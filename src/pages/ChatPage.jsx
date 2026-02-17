@@ -46,7 +46,8 @@ const ChatPage = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch('https://n8n-excollo.azurewebsites.net/webhook/labourlaw/query', {
+            const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+            const response = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -57,17 +58,33 @@ const ChatPage = () => {
 
             if (!response.ok) throw new Error('Failed to fetch from expert');
 
-            const data = await response.json();
+            let data = await response.json();
+
+            // Handle n8n returning an array
+            if (Array.isArray(data) && data.length > 0) {
+                data = data[0];
+            }
 
             // Robust extraction of the core response
             let finalContent = data;
-            if (data.final) {
-                finalContent = data.final;
-            } else if (data.output) {
-                if (typeof data.output === 'object' && data.output.final) {
-                    finalContent = data.output.final;
-                } else {
-                    finalContent = data.output;
+
+            // If it's a string that looks like JSON, try to parse it
+            if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
+                try {
+                    data = JSON.parse(data);
+                    finalContent = data;
+                } catch (e) { }
+            }
+
+            if (data && typeof data === 'object') {
+                if (data.final) {
+                    finalContent = data.final;
+                } else if (data.output) {
+                    if (typeof data.output === 'object' && data.output.final) {
+                        finalContent = data.output.final;
+                    } else {
+                        finalContent = data.output;
+                    }
                 }
             }
 
@@ -175,8 +192,8 @@ const ChatPage = () => {
                                             </div>
                                         ) : (
                                             // FLEXIBLE RENDERING: Only use LegalReport if there's structured data
-                                            (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.final || msg.content.key_points)) ? (
-                                                <LegalReport data={msg.content.final || msg.content} />
+                                            (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.final || msg.content.key_points || (msg.content.output && typeof msg.content.output === 'object'))) ? (
+                                                <LegalReport data={msg.content.final || msg.content.output?.final || msg.content.output || msg.content} />
                                             ) : (
                                                 <div style={{
                                                     display: 'inline-block',
