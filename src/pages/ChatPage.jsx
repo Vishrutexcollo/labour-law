@@ -37,10 +37,24 @@ const ChatPage = () => {
         setSelectedMode('chat');
     };
 
+    // Recursive function to strip away all layers (arrays, stringified JSON, "final"/"output" keys)
+    const deepUnwrap = (val) => {
+        let current = val;
+        if (Array.isArray(current) && current.length > 0) return deepUnwrap(current[0]);
+        if (typeof current === 'string' && (current.trim().startsWith('{') || current.trim().startsWith('['))) {
+            try { return deepUnwrap(JSON.parse(current)); } catch (e) { return current; }
+        }
+        if (current && typeof current === 'object') {
+            if (current.final !== undefined) return deepUnwrap(current.final);
+            if (current.output !== undefined) return deepUnwrap(current.output);
+        }
+        return current;
+    };
+
     const processQuery = async (queryText) => {
         if (!queryText.trim() || isLoading) return;
 
-        const currentMode = selectedMode; // Capture mode at time of sending
+        const currentMode = selectedMode;
         const userMsg = { id: Date.now(), role: 'user', text: queryText };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
@@ -61,43 +75,15 @@ const ChatPage = () => {
             if (!response.ok) throw new Error('Failed to fetch from expert');
 
             let data = await response.json();
-
-            // Recursive function to strip away all layers (arrays, stringified JSON, "final"/"output" keys)
-            const deepUnwrap = (val) => {
-                let current = val;
-
-                // 1. Handle Array
-                if (Array.isArray(current) && current.length > 0) {
-                    return deepUnwrap(current[0]);
-                }
-
-                // 2. Handle Stringified JSON
-                if (typeof current === 'string' && (current.trim().startsWith('{') || current.trim().startsWith('['))) {
-                    try {
-                        const parsed = JSON.parse(current);
-                        return deepUnwrap(parsed);
-                    } catch (e) {
-                        // If parsing fails, treat as normal string
-                        return current;
-                    }
-                }
-
-                // 3. Handle Object wrappers
-                if (current && typeof current === 'object') {
-                    if (current.final !== undefined) return deepUnwrap(current.final);
-                    if (current.output !== undefined) return deepUnwrap(current.output);
-                }
-
-                return current;
-            };
-
             const finalContent = deepUnwrap(data);
 
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
                 content: finalContent,
-                viewMode: currentMode // Match the mode it was requested in
+                viewMode: currentMode,
+                originalQuery: queryText,
+                hasReportData: currentMode === 'report' // Set flag on creation
             }]);
         } catch (error) {
             console.error('Error:', error);
@@ -118,10 +104,46 @@ const ChatPage = () => {
         processQuery(input);
     };
 
-    const toggleViewMode = (messageId, mode) => {
-        setMessages(prev => prev.map(msg =>
-            msg.id === messageId ? { ...msg, viewMode: mode } : msg
-        ));
+    const toggleViewMode = async (messageId, mode) => {
+        const msg = messages.find(m => m.id === messageId);
+        if (!msg) return;
+
+        // If switching to report but we don't have the data yet, RE-FETCH from n8n
+        if (mode === 'report' && !msg.hasReportData) {
+            // Set upgrading state for UI feedback
+            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isUpgrading: true, viewMode: mode } : m));
+
+            try {
+                const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: msg.originalQuery,
+                        sessionId: sessionId,
+                        mode: 'report'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const finalContent = deepUnwrap(data);
+                    setMessages(prev => prev.map(m => m.id === messageId ? {
+                        ...m,
+                        content: finalContent,
+                        isUpgrading: false,
+                        hasReportData: true // Mark as fetched permanently
+                    } : m));
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to upgrade message to report:", e);
+            }
+            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isUpgrading: false } : m));
+        } else {
+            // If we have the data or are switching to chat, just toggle viewMode locally
+            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, viewMode: mode } : m));
+        }
     };
 
     return (
@@ -256,90 +278,73 @@ const ChatPage = () => {
                                                 {msg.text}
                                             </div>
                                         ) : (
-                                            // FLEXIBLE RENDERING:
-                                            // 1. If it's a greeting or general message, show a simple bubble
-                                            // 2. If it's abusive or harmful, show a warning
-                                            // 3. If it has structured legal keys, show the Dual-View Toggle (Report vs Chat)
-                                            // 4. Fallback to string/JSON rendering
-                                            (typeof msg.content === 'object' && msg.content && msg.content.type === 'greeting_or_general') ? (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#f8fafc',
-                                                    padding: '14px 20px',
-                                                    borderRadius: '4px 20px 20px 20px',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '1rem',
-                                                    lineHeight: 1.6,
+                                            <div className="assistant-response-container" style={{ width: '100%', maxWidth: '900px' }}>
+                                                {/* Mode Toggle Tabs - Now ALWAYS shown for every assistant message */}
+                                                <div className="view-mode-tabs" style={{
+                                                    display: 'inline-flex',
+                                                    backgroundColor: '#f1f5f9',
+                                                    padding: '4px',
+                                                    borderRadius: '8px',
+                                                    marginBottom: '12px',
                                                     border: '1px solid var(--border-color)'
                                                 }}>
-                                                    {msg.content.answer}
+                                                    <button
+                                                        onClick={() => toggleViewMode(msg.id, 'report')}
+                                                        style={{
+                                                            padding: '6px 16px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.85rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            border: 'none',
+                                                            backgroundColor: msg.viewMode === 'report' ? '#fff' : 'transparent',
+                                                            color: msg.viewMode === 'report' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                                            boxShadow: msg.viewMode === 'report' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        Detailed Report
+                                                    </button>
+                                                    <button
+                                                        onClick={() => toggleViewMode(msg.id, 'chat')}
+                                                        style={{
+                                                            padding: '6px 16px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.85rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            border: 'none',
+                                                            backgroundColor: msg.viewMode === 'chat' ? '#fff' : 'transparent',
+                                                            color: msg.viewMode === 'chat' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                                            boxShadow: msg.viewMode === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        Simple Chat
+                                                    </button>
                                                 </div>
-                                            ) : (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#fef2f2',
-                                                    padding: '16px 20px',
-                                                    borderRadius: '12px',
-                                                    color: '#991b1b',
-                                                    fontSize: '0.95rem',
-                                                    lineHeight: 1.6,
-                                                    border: '1px solid #fecaca',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px'
-                                                }}>
-                                                    <AlertTriangle size={20} color="#dc2626" />
-                                                    <span>{msg.content.answer || "I cannot respond to this query as it violates our safety policies."}</span>
-                                                </div>
-                                            ) : (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
-                                                <div className="assistant-response-container" style={{ width: '100%', maxWidth: '900px' }}>
-                                                    {/* Mode Toggle Tabs */}
-                                                    <div className="view-mode-tabs" style={{
-                                                        display: 'inline-flex',
-                                                        backgroundColor: '#f1f5f9',
-                                                        padding: '4px',
-                                                        borderRadius: '8px',
-                                                        marginBottom: '12px',
-                                                        border: '1px solid var(--border-color)'
-                                                    }}>
-                                                        <button
-                                                            onClick={() => toggleViewMode(msg.id, 'report')}
-                                                            style={{
-                                                                padding: '6px 16px',
-                                                                borderRadius: '6px',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: 600,
-                                                                cursor: 'pointer',
-                                                                border: 'none',
-                                                                backgroundColor: msg.viewMode === 'report' ? '#fff' : 'transparent',
-                                                                color: msg.viewMode === 'report' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                                                                boxShadow: msg.viewMode === 'report' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            Detailed Report
-                                                        </button>
-                                                        <button
-                                                            onClick={() => toggleViewMode(msg.id, 'chat')}
-                                                            style={{
-                                                                padding: '6px 16px',
-                                                                borderRadius: '6px',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: 600,
-                                                                cursor: 'pointer',
-                                                                border: 'none',
-                                                                backgroundColor: msg.viewMode === 'chat' ? '#fff' : 'transparent',
-                                                                color: msg.viewMode === 'chat' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                                                                boxShadow: msg.viewMode === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            Simple Chat
-                                                        </button>
-                                                    </div>
 
-                                                    {/* Content Rendering based on preference */}
-                                                    {msg.viewMode === 'report' ? (
+                                                {/* Content Rendering based on preference and type */}
+                                                {msg.isUpgrading ? (
+                                                    <div style={{
+                                                        padding: '40px 20px',
+                                                        textAlign: 'center',
+                                                        backgroundColor: '#f8fafc',
+                                                        borderRadius: '16px',
+                                                        border: '1px dashed var(--border-color)',
+                                                        color: 'var(--accent-primary)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '12px'
+                                                    }}>
+                                                        <Loader2 size={32} className="animate-spin" />
+                                                        <div style={{ fontWeight: 600 }}>Upgrading to Detailed Report...</div>
+                                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Retrieving legal citations and precedents...</div>
+                                                    </div>
+                                                ) : msg.viewMode === 'report' ? (
+                                                    // Detailed Report View
+                                                    (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
                                                         <LegalReport data={msg.content} />
                                                     ) : (
                                                         <div style={{
@@ -350,27 +355,34 @@ const ChatPage = () => {
                                                             color: 'var(--text-primary)',
                                                             fontSize: '1rem',
                                                             lineHeight: 1.6,
-                                                            border: '1px solid var(--border-color)'
+                                                            border: '1px solid var(--border-color)',
+                                                            whiteSpace: 'pre-wrap'
                                                         }}>
-                                                            {msg.content.answer}
+                                                            {typeof msg.content === 'object' ? msg.content.answer : msg.content}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div style={{
-                                                    display: 'inline-block',
-                                                    backgroundColor: '#f8fafc',
-                                                    padding: '14px 20px',
-                                                    borderRadius: '4px 20px 20px 20px',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '1rem',
-                                                    lineHeight: 1.6,
-                                                    border: '1px solid var(--border-color)',
-                                                    whiteSpace: 'pre-wrap'
-                                                }}>
-                                                    {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
-                                                </div>
-                                            )
+                                                    )
+                                                ) : (
+                                                    // Simple Chat View
+                                                    <div style={{
+                                                        display: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? 'flex' : 'inline-block',
+                                                        backgroundColor: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '#fef2f2' : '#f8fafc',
+                                                        padding: '14px 20px',
+                                                        borderRadius: '4px 20px 20px 20px',
+                                                        color: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '#991b1b' : 'var(--text-primary)',
+                                                        fontSize: '1rem',
+                                                        lineHeight: 1.6,
+                                                        border: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '1px solid #fecaca' : '1px solid var(--border-color)',
+                                                        whiteSpace: 'pre-wrap',
+                                                        alignItems: 'center',
+                                                        gap: '12px'
+                                                    }}>
+                                                        {typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful' && <AlertTriangle size={20} color="#dc2626" />}
+                                                        <span>
+                                                            {typeof msg.content === 'object' ? (msg.content.answer || (msg.content.type === 'abusive_or_harmful' ? "Safety limit reached." : "")) : msg.content}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 )}
