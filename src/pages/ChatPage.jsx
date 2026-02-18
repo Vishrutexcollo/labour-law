@@ -35,12 +35,10 @@ const ChatPage = () => {
         setInput('');
     };
 
-    const handleSend = async (e) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    const processQuery = async (queryText) => {
+        if (!queryText.trim() || isLoading) return;
 
-        const userQuery = input.trim();
-        const userMsg = { id: Date.now(), role: 'user', text: userQuery };
+        const userMsg = { id: Date.now(), role: 'user', text: queryText };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
@@ -51,7 +49,7 @@ const ChatPage = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    query: userQuery,
+                    query: queryText,
                     sessionId: sessionId
                 })
             });
@@ -104,9 +102,15 @@ const ChatPage = () => {
                 isError: true,
                 text: "I apologize, but I encountered an error connecting to the legal database. Please try again later."
             }]);
+
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSend = (e) => {
+        e.preventDefault();
+        processQuery(input);
     };
 
     return (
@@ -134,12 +138,59 @@ const ChatPage = () => {
                     )}
 
                     {messages.length === 0 && (
-                        <div style={{ textAlign: 'center', marginTop: '100px', color: 'var(--text-muted)' }} className="fade-in">
+                        <div style={{ textAlign: 'center', marginTop: '60px', color: 'var(--text-muted)' }} className="fade-in">
                             <Gavel size={64} color="var(--accent-primary)" style={{ marginBottom: '24px', opacity: 0.15 }} />
                             <h2 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', marginBottom: '12px' }}>How can I help you today?</h2>
-                            <p style={{ maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
+                            <p style={{ maxWidth: '400px', margin: '0 auto 40px', lineHeight: 1.6 }}>
                                 Ask about Industrial Disputes, Minimum Wages, or any Indian Labour Law query.
                             </p>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                gap: '16px',
+                                maxWidth: '800px',
+                                margin: '0 auto'
+                            }}>
+                                {[
+                                    "What is the severance pay calculation under the ID Act?",
+                                    "Explain illegal strike with reference to judgments.",
+                                    "Can an employer deduct salary for damage to property?",
+                                    "How has the judiciary interpreted the triple test of industry?"
+                                ].map((q, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => processQuery(q)}
+                                        style={{
+                                            padding: '24px',
+                                            textAlign: 'left',
+                                            backgroundColor: '#fff',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '16px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '12px'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
+                                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 500 }}>{q}</span>
+                                        <ChevronRight size={18} color="var(--accent-primary)" />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 

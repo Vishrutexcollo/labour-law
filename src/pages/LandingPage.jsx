@@ -29,18 +29,19 @@ const LandingPage = () => {
                             <section>
                                 <h2 style={{ fontSize: '1.25rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>Purpose</h2>
                                 <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '1.05rem' }}>
-                                    A professional tool designed to democratize legal information by providing accurate, and accessible guidance on Indian Labour Laws.
+                                    A professional assistant for Indian labour-law compliance — answers are evidence-first (Bare Act + citations) to help HR teams and employers take correct actions faster.
                                 </p>
                             </section>
 
                             <section>
-                                <h2 style={{ fontSize: '1.25rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>Knowledge Base</h2>
+                                <h2 style={{ fontSize: '1.25rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>Content</h2>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', color: 'var(--text-secondary)' }}>
                                     {[
-                                        "Industrial Disputes Act",
-                                        "Minimum Wages Act",
-                                        "New Labour Codes",
-                                        "State Labor Laws"
+                                        "Bare Act",
+                                        "Case law references",
+                                        "Section/Rule Citations",
+                                        "Compliance Checklists",
+                                        "Evidence Snippets"
                                     ].map((item, i) => (
                                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem' }}>
                                             <CheckCircle2 size={16} color="var(--accent-primary)" /> {item}
@@ -50,12 +51,12 @@ const LandingPage = () => {
                             </section>
 
                             <section>
-                                <h2 style={{ fontSize: '1.25rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>User Guidelines</h2>
+                                <h2 style={{ fontSize: '1.25rem', marginBottom: '12px', color: 'var(--text-primary)', fontWeight: 600 }}>How to use</h2>
                                 <ul style={{ padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {[
-                                        "State your queries clearly for better accuracy.",
-                                        "Use follow-up questions to explore specific clauses.",
-                                        "Specify the industry or state if relevant to your case."
+                                        "Input your specific HR query or compliance scenario.",
+                                        "Review the legal analysis supported by Bare Act citations.",
+                                        "Apply the step-by-step compliance checklist provided."
                                     ].map((text, i) => (
                                         <li key={i} style={{ display: 'flex', gap: '12px', color: 'var(--text-secondary)', fontSize: '1rem' }}>
                                             <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>0{i + 1}</span>
