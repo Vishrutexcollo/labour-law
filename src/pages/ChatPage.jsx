@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, ChevronRight, Gavel, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
+import { Send, User, ChevronRight, Gavel, RefreshCw, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
 import LegalReport from '../components/LegalReport';
 
 const ChatPage = () => {
@@ -7,6 +7,7 @@ const ChatPage = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState('');
+    const [selectedMode, setSelectedMode] = useState('chat'); // Default mode
     const messagesEndRef = useRef(null);
 
     // Initialize or retrieve Session ID
@@ -33,11 +34,13 @@ const ChatPage = () => {
         setSessionId(newSid);
         setMessages([]);
         setInput('');
+        setSelectedMode('chat');
     };
 
     const processQuery = async (queryText) => {
         if (!queryText.trim() || isLoading) return;
 
+        const currentMode = selectedMode; // Capture mode at time of sending
         const userMsg = { id: Date.now(), role: 'user', text: queryText };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
@@ -50,7 +53,8 @@ const ChatPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     query: queryText,
-                    sessionId: sessionId
+                    sessionId: sessionId,
+                    mode: currentMode
                 })
             });
 
@@ -93,7 +97,7 @@ const ChatPage = () => {
                 id: Date.now() + 1,
                 role: 'assistant',
                 content: finalContent,
-                viewMode: 'report' // Default view
+                viewMode: currentMode // Match the mode it was requested in
             }]);
         } catch (error) {
             console.error('Error:', error);
