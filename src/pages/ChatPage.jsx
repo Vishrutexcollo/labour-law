@@ -94,7 +94,8 @@ const ChatPage = () => {
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
-                content: finalContent
+                content: finalContent,
+                viewMode: 'report' // Default view
             }]);
         } catch (error) {
             console.error('Error:', error);
@@ -107,6 +108,12 @@ const ChatPage = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const toggleViewMode = (messageId, mode) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId ? { ...msg, viewMode: mode } : msg
+        ));
     };
 
     return (
@@ -197,7 +204,7 @@ const ChatPage = () => {
                                             // FLEXIBLE RENDERING:
                                             // 1. If it's a greeting or general message, show a simple bubble
                                             // 2. If it's abusive or harmful, show a warning
-                                            // 3. If it has structured legal keys, show the LegalReport
+                                            // 3. If it has structured legal keys, show the Dual-View Toggle (Report vs Chat)
                                             // 4. Fallback to string/JSON rendering
                                             (typeof msg.content === 'object' && msg.content && msg.content.type === 'greeting_or_general') ? (
                                                 <div style={{
@@ -230,7 +237,70 @@ const ChatPage = () => {
                                                     <span>{msg.content.answer || "I cannot respond to this query as it violates our safety policies."}</span>
                                                 </div>
                                             ) : (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
-                                                <LegalReport data={msg.content} />
+                                                <div className="assistant-response-container" style={{ width: '100%', maxWidth: '900px' }}>
+                                                    {/* Mode Toggle Tabs */}
+                                                    <div className="view-mode-tabs" style={{
+                                                        display: 'inline-flex',
+                                                        backgroundColor: '#f1f5f9',
+                                                        padding: '4px',
+                                                        borderRadius: '8px',
+                                                        marginBottom: '12px',
+                                                        border: '1px solid var(--border-color)'
+                                                    }}>
+                                                        <button
+                                                            onClick={() => toggleViewMode(msg.id, 'report')}
+                                                            style={{
+                                                                padding: '6px 16px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                border: 'none',
+                                                                backgroundColor: msg.viewMode === 'report' ? '#fff' : 'transparent',
+                                                                color: msg.viewMode === 'report' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                                                boxShadow: msg.viewMode === 'report' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            Detailed Report
+                                                        </button>
+                                                        <button
+                                                            onClick={() => toggleViewMode(msg.id, 'chat')}
+                                                            style={{
+                                                                padding: '6px 16px',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                border: 'none',
+                                                                backgroundColor: msg.viewMode === 'chat' ? '#fff' : 'transparent',
+                                                                color: msg.viewMode === 'chat' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                                                boxShadow: msg.viewMode === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            Simple Chat
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Content Rendering based on preference */}
+                                                    {msg.viewMode === 'report' ? (
+                                                        <LegalReport data={msg.content} />
+                                                    ) : (
+                                                        <div style={{
+                                                            display: 'inline-block',
+                                                            backgroundColor: '#f8fafc',
+                                                            padding: '14px 20px',
+                                                            borderRadius: '4px 20px 20px 20px',
+                                                            color: 'var(--text-primary)',
+                                                            fontSize: '1rem',
+                                                            lineHeight: 1.6,
+                                                            border: '1px solid var(--border-color)'
+                                                        }}>
+                                                            {msg.content.answer}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div style={{
                                                     display: 'inline-block',
