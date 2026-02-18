@@ -109,16 +109,15 @@ const ChatPage = () => {
         }
     };
 
-<<<<<<< HEAD
     const handleSend = (e) => {
         e.preventDefault();
         processQuery(input);
-=======
+    };
+
     const toggleViewMode = (messageId, mode) => {
         setMessages(prev => prev.map(msg =>
             msg.id === messageId ? { ...msg, viewMode: mode } : msg
         ));
->>>>>>> 42190b609965d57cbc14192313f5af430d4e3177
     };
 
     return (
