@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LabourLawOutputSchema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["final"],
+  "properties": {
+    "final": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "answer"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["greeting_or_general", "labour_law", "abusive_or_harmful"]
+        },
+        "answer": {
+          "type": "string"
+        },
+        "disclaimer": {
+          "type": "string",
+          "default": "This is informational guidance based on cited sources, not legal advice. Consult a legal professional for specific situations."
+        },
+        "clarifying_questions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 2,
+          "default": []
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+
+        "at_a_glance": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["act", "applicable", "confidence", "key_risk"],
+            "properties": {
+              "act": { "type": "string" },
+              "applicable": { "type": "string", "enum": ["Yes", "No", "Conditional"] },
+              "confidence": { "type": "string", "enum": ["High", "Medium", "Review Needed"] },
+              "key_risk": { "type": "string" }
+            }
+          }
+        },
+
+        "executive_summary": {
+          "type": "string",
+          "default": ""
+        },
+
+        "applicability_detail": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["act", "section", "applies_because", "does_not_apply_if", "evidence_snippet"],
+            "properties": {
+              "act": { "type": "string" },
+              "section": { "type": "string" },
+              "applies_because": { "type": "string" },
+              "does_not_apply_if": { "type": "string" },
+              "evidence_snippet": { "type": "string" }
+            }
+          }
+        },
+
+        "checklist": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "step",
+              "trigger",
+              "action",
+              "timeline",
+              "owner",
+              "section_reference",
+              "confidence",
+              "status"
+            ],
+            "properties": {
+              "step": { "type": "string" },
+              "trigger": { "type": "string" },
+              "action": { "type": "string" },
+              "timeline": { "type": "string" },
+              "owner": { "type": "string" },
+              "section_reference": { "type": "string" },
+              "confidence": { "type": "string", "enum": ["High", "Medium", "Review Needed"] },
+              "status": { "type": "string", "enum": ["Verified", "Assumed", "Unknown"] }
+            }
+          }
+        },
+
+        "risks": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "issue", "why_disputed", "recommended_action", "confidence"],
+            "properties": {
+              "title": { "type": "string" },
+              "issue": { "type": "string" },
+              "why_disputed": { "type": "string" },
+              "case_law_signal": { "type": "string", "default": "" },
+              "recommended_action": { "type": "string" },
+              "confidence": { "type": "string", "enum": ["Medium", "Review Needed"] }
+            }
+          }
+        },
+
+        "penalties": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["violation", "monetary", "mechanism", "reference"],
+            "properties": {
+              "violation": { "type": "string" },
+              "monetary": { "type": "string" },
+              "imprisonment": { "type": "string", "default": "" },
+              "mechanism": { "type": "string" },
+              "reference": { "type": "string" }
+            }
+          }
+        },
+
+        "gaps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+
+        "next_steps": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "reason", "timeline", "owner"],
+            "properties": {
+              "action": { "type": "string" },
+              "reason": { "type": "string" },
+              "timeline": { "type": "string" },
+              "owner": { "type": "string" }
+            }
+          }
+        },
+
+        "bare_act": {
+          "type": "object",
+          "additionalProperties": false,
+          "default": { "act": "", "section": "", "summary": "", "evidence": [] },
+          "required": ["act", "section", "summary", "evidence"],
+          "properties": {
+            "act": { "type": "string", "default": "" },
+            "section": { "type": "string", "default": "" },
+            "summary": { "type": "string", "default": "" },
+            "evidence": {
+              "type": "array",
+              "default": [],
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["doc_id", "chunk_id", "snippet"],
+                "properties": {
+                  "doc_id": { "type": "string" },
+                  "chunk_id": { "type": "string" },
+                  "section": { "type": "string", "default": "" },
+                  "snippet": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+
+        "citations": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "url", "relevance", "court", "year"],
+            "properties": {
+              "title": { "type": "string" },
+              "url": { "type": "string" },
+              "relevance": { "type": "string" },
+              "court": { "type": "string" },
+              "year": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

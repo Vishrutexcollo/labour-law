@@ -1,21 +1,55 @@
 import React from 'react';
-import { Book, CheckCircle, ExternalLink, AlertTriangle, Scale, Info } from 'lucide-react';
+import { ExternalLink, ShieldAlert } from 'lucide-react';
+import ReferenceChips from './ReferenceChips';
 
-const LegalReport = ({ data }) => {
+const ReportSection = ({ id, title, children }) => (
+    <div className="report-section">
+        <h3>SECTION {id} — {title}</h3>
+        <div className="report-section-content">
+            {children}
+        </div>
+    </div>
+);
+
+const ReportTable = ({ headers, data, renderRow }) => (
+    <div style={{ overflowX: 'auto' }}>
+        <table className="report-table">
+            <thead>
+                <tr>
+                    {headers.map((h, i) => <th key={i}>{h}</th>)}
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((item, i) => (
+                    <tr key={i}>
+                        {renderRow(item, i)}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+);
+
+const LegalReport = ({ data, originalQuery }) => {
     if (!data) return null;
 
     const {
         answer,
-        applicability,
-        key_points,
+        at_a_glance,
+        executive_summary,
+        executive_summary_ref_ids,
+        executive_summary_ref_urls,
+        applicability_detail,
         checklist,
+        risks,
+        penalties,
+        next_steps,
         bare_act,
         citations,
-        confidence,
-        assumptions
+        disclaimer,
+        references
     } = data;
 
-    // Helper to check if a value has actual displayable content
     const hasContent = (val) => {
         if (!val) return false;
         if (typeof val === 'string') return val.trim().length > 0;
@@ -24,147 +58,243 @@ const LegalReport = ({ data }) => {
         return true;
     };
 
-    const hasBareAct = hasContent(bare_act);
-
     return (
         <div className="report-container fade-in">
-            <div className="report-header">
-                <div>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>Legal Analysis Report</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Structured guidance based on Indian Labour Law</p>
-                </div>
-                {hasContent(confidence) && (
-                    <span className={`badge badge-${confidence.toLowerCase()}`}>
-                        {confidence} Confidence
-                    </span>
-                )}
+            {/* Header Banner */}
+            <div className="report-banner">
+                <h1>LABOUR LAW COMPLIANCE REPORT</h1>
+                <p>Central Acts Only — Gold Standard Reference</p>
             </div>
 
-            {hasContent(answer) && (
-                <div className="report-section">
-                    <h3><Scale size={20} color="var(--accent-primary)" /> Executive Summary</h3>
-                    <div className="info-box">
-                        {answer}
+            {/* Metadata Section */}
+            <div className="report-metadata">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, minWidth: '100px' }}>Report ID:</span>
+                        <span>LLW-RPT-{new Date().getTime().toString().slice(-8)}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, minWidth: '100px' }}>Acts in Scope:</span>
+                        <span>Central Acts only</span>
                     </div>
                 </div>
-            )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, minWidth: '100px' }}>Generated On:</span>
+                        <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, minWidth: '100px' }}>Query:</span>
+                        <span>{originalQuery || "Legal Consultation"}</span>
+                    </div>
+                </div>
+            </div>
 
-            {hasBareAct && (
-                <div className="report-section">
-                    <h3><Book size={20} color="var(--accent-primary)" /> Bare Act Reference</h3>
-                    <div style={{ padding: '16px', backgroundColor: '#f0f7ff', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
-                        {hasContent(bare_act.act) && <p style={{ fontWeight: 600, fontSize: '1rem', color: '#1e40af' }}>{bare_act.act}</p>}
-                        {hasContent(bare_act.section) && <p style={{ fontWeight: 500, color: '#1e3a8a', marginTop: '4px' }}>Section: {bare_act.section}</p>}
-                        {hasContent(bare_act.summary) && <p style={{ marginTop: '8px', fontSize: '0.95rem', color: '#1e40af', lineHeight: 1.5 }}>{bare_act.summary}</p>}
+            <div className="report-body">
+                {/* SECTION 1 — AT-A-GLANCE STATUS */}
+                {hasContent(at_a_glance) && (
+                    <ReportSection id="1" title="AT-A-GLANCE STATUS">
+                        <ReportTable
+                            headers={["Act", "Applicable", "Confidence", "Key Risk"]}
+                            data={at_a_glance}
+                            renderRow={(item) => (
+                                <>
+                                    <td style={{ fontWeight: 600 }}>{item.act}</td>
+                                    <td>{item.applicable}</td>
+                                    <td>{item.confidence}</td>
+                                    <td style={{ color: '#dc2626' }}>{item.key_risk}</td>
+                                </>
+                            )}
+                        />
+                    </ReportSection>
+                )}
 
-                        {/* New Evidence Field */}
-                        {hasContent(bare_act.evidence) && (
-                            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                                <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.025em' }}>
-                                    Supporting Evidence
-                                </p>
-                                {bare_act.evidence.map((item, idx) => (
-                                    <div key={idx} style={{ marginBottom: idx === bare_act.evidence.length - 1 ? 0 : '12px' }}>
-                                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: '#3b82f6', marginBottom: '4px' }}>
-                                            <span>Doc: {item.doc_id}</span>
-                                            <span>•</span>
-                                            <span>Section: {item.section}</span>
+                {/* SECTION 2 — EXECUTIVE SUMMARY */}
+                {hasContent(executive_summary || answer) && (
+                    <ReportSection id="2" title="EXECUTIVE SUMMARY">
+                        <div className="info-box">
+                            {executive_summary || answer}
+                            <ReferenceChips
+                                ids={executive_summary_ref_ids}
+                                urls={executive_summary_ref_urls}
+                                references={references}
+                            />
+                        </div>
+                        {!String(executive_summary || "").includes("State-specific obligations") && (
+                            <div className="warning-box">
+                                This report covers Central Acts only. State-specific obligations are not analyzed. Consult your legal team for state-level compliance.
+                            </div>
+                        )}
+                    </ReportSection>
+                )}
+
+                {/* SECTION 3 — APPLICABILITY DETERMINATION */}
+                {hasContent(applicability_detail) && (
+                    <ReportSection id="3" title="APPLICABILITY DETERMINATION">
+                        {applicability_detail.map((item, i) => (
+                            <div key={i} style={{ marginBottom: '24px' }}>
+                                <div style={{ fontWeight: 700, color: 'var(--report-navy)', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>{item.act}</div>
+                                <div style={{ marginBottom: '4px' }}><span style={{ fontWeight: 700 }}>Applies because:</span> {item.applies_because}</div>
+                                <div style={{ marginBottom: '4px' }}><span style={{ fontWeight: 700 }}>Does NOT apply if:</span> {item.does_not_apply_if}</div>
+                                <div style={{ marginBottom: '12px' }}>
+                                    <span style={{ fontWeight: 700 }}>Statutory basis:</span> {item.section} — {item.act}
+                                    <ReferenceChips ids={item.ref_ids} urls={item.ref_urls} references={references} />
+                                </div>
+
+                                {item.evidence_snippet && (
+                                    <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8fafc', borderLeft: '3px solid #cbd5e1', borderRadius: '0 4px 4px 0' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Evidence Snippet (Source Data)</div>
+                                        <div style={{ fontStyle: 'italic', fontSize: '0.85rem', color: '#334155', lineHeight: '1.5' }}>"{item.evidence_snippet}"</div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </ReportSection>
+                )}
+
+                {/* SECTION 4 — COMPLIANCE CHECKLIST */}
+                {hasContent(checklist) && (
+                    <ReportSection id="4" title="COMPLIANCE CHECKLIST">
+                        <ReportTable
+                            headers={["Obligation", "Action Required", "Timeline", "Owner", "Confidence", "Status"]}
+                            data={checklist}
+                            renderRow={(item) => (
+                                <>
+                                    <td style={{ fontWeight: 600 }}>{item.step}</td>
+                                    <td>
+                                        <div>
+                                            {item.action}
+                                            <ReferenceChips ids={item.ref_ids} urls={item.ref_urls} references={references} />
                                         </div>
-                                        <p style={{ fontSize: '0.9rem', color: '#1e3a8a', fontStyle: 'italic', backgroundColor: 'rgba(255,255,255,0.5)', padding: '8px', borderRadius: '4px' }}>
-                                            "{item.snippet}"
-                                        </p>
+                                        {/* {item.trigger && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Trigger: {item.trigger}</div>} */}
+                                    </td>
+                                    <td>{item.timeline}</td>
+                                    <td>{item.owner}</td>
+                                    <td style={{ fontWeight: 500, color: item.confidence === 'High' ? '#166534' : '#92400e' }}>{item.confidence}</td>
+                                    <td>
+                                        <span style={{
+                                            fontSize: '0.7rem',
+                                            padding: '2px 6px',
+                                            borderRadius: '3px',
+                                            backgroundColor: item.status === 'Verified' ? '#dcfce7' : '#fef9c3',
+                                            color: item.status === 'Verified' ? '#166534' : '#854d0e'
+                                        }}>
+                                            {item.status}
+                                        </span>
+                                    </td>
+                                </>
+                            )}
+                        />
+                    </ReportSection>
+                )}
+
+                {/* SECTION 5 — RISKS & GREY AREAS */}
+                {hasContent(risks) && (
+                    <ReportSection id="5" title="RISKS & GREY AREAS">
+                        {risks.map((risk, i) => (
+                            <div key={i} className={`risk-card ${risk.confidence === 'Review Needed' ? 'high-risk' : 'med-risk'}`}>
+                                <div style={{ fontWeight: 700, color: risk.confidence === 'Review Needed' ? '#991b1b' : '#92400e', marginBottom: '12px', textTransform: 'uppercase' }}>
+                                    RISK {i + 1}: {risk.title}
+                                </div>
+                                <div style={{ marginBottom: '8px' }}><span className="risk-label">Confidence:</span> {risk.confidence}</div>
+                                <div style={{ marginBottom: '8px' }}><span className="risk-label">What the issue is:</span> {risk.issue}</div>
+                                <div style={{ marginBottom: '8px' }}><span className="risk-label">Why it is disputed:</span> {risk.why_disputed}</div>
+                                {risk.case_law_signal && (
+                                    <div style={{ marginBottom: '8px', fontStyle: 'italic' }}><span className="risk-label">Case law signal:</span> {risk.case_law_signal}</div>
+                                )}
+                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                                    <span className="risk-label">Recommended action:</span> {risk.recommended_action}
+                                </div>
+                            </div>
+                        ))}
+                    </ReportSection>
+                )}
+
+                {/* SECTION 6 — PENALTY EXPOSURE */}
+                {hasContent(penalties) && (
+                    <ReportSection id="6" title="PENALTY EXPOSURE">
+                        <ReportTable
+                            headers={["Violation", "Monetary Penalty", "Imprisonment", "Reference"]}
+                            data={penalties}
+                            renderRow={(item) => (
+                                <>
+                                    <td style={{ fontWeight: 600, color: '#dc2626' }}>{item.violation}</td>
+                                    <td>{item.monetary}</td>
+                                    <td>{item.imprisonment || "N/A"}</td>
+                                    <td>{item.reference}</td>
+                                </>
+                            )}
+                        />
+                    </ReportSection>
+                )}
+
+                {/* SECTION 8 — NEXT STEPS */}
+                {hasContent(next_steps) && (
+                    <ReportSection id="8" title="NEXT STEPS">
+                        <ReportTable
+                            headers={["#", "Action Required", "Why it is needed", "Timeline", "Owner"]}
+                            data={next_steps}
+                            renderRow={(item, idx) => (
+                                <>
+                                    <td style={{ fontWeight: 700 }}>{idx + 1}</td>
+                                    <td style={{ fontWeight: 600 }}>
+                                        {item.action}
+                                        <ReferenceChips ids={item.ref_ids} urls={item.ref_urls} references={references} />
+                                    </td>
+                                    <td>{item.reason}</td>
+                                    <td>{item.timeline}</td>
+                                    <td>{item.owner}</td>
+                                </>
+                            )}
+                        />
+                    </ReportSection>
+                )}
+
+                {/* SECTION 9 — EVIDENCE INDEX */}
+                {hasContent(bare_act || citations) && (
+                    <ReportSection id="9" title="EVIDENCE INDEX">
+                        {hasContent(bare_act) && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <div style={{ fontWeight: 700, marginBottom: '12px', color: 'var(--report-navy)', fontSize: '0.9rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Bare Acts</div>
+                                <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '4px' }}>
+                                    <div style={{ fontWeight: 600, marginBottom: '8px' }}>{bare_act.act} — {bare_act.section}</div>
+                                    {bare_act.summary && <div style={{ fontSize: '0.9rem', marginBottom: '12px', color: '#475569' }}>{bare_act.summary}</div>}
+                                    {bare_act.evidence?.map((ev, i) => (
+                                        <div key={i} style={{ marginBottom: '12px', paddingLeft: '12px', borderLeft: '2px solid var(--report-teal)' }}>
+                                            {/* <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>DOC ID: {ev.doc_id} | {ev.section || bare_act.section}</div> */}
+                                            <div style={{ fontSize: '0.85rem', fontStyle: 'italic', marginTop: '4px' }}>"{ev.snippet}"</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {hasContent(citations) && (
+                            <div>
+                                <div style={{ fontWeight: 700, marginBottom: '12px', color: 'var(--report-navy)', fontSize: '0.9rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Case Law References</div>
+                                {citations.map((cite, i) => (
+                                    <div key={i} style={{ marginBottom: '16px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--report-navy)' }}>{cite.title}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{cite.court} ({cite.year})</div>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', marginTop: '6px', color: '#334155' }}>{cite.relevance}</div>
+                                        {cite.url && (
+                                            <a href={cite.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', marginTop: '8px', color: 'var(--report-teal)', textDecoration: 'none', fontWeight: 600 }}>
+                                                View Judgment on Indian Kanoon <ExternalLink size={12} />
+                                            </a>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
-                    </div>
-                </div>
-            )}
+                    </ReportSection>
+                )}
 
-            {hasContent(applicability) && (
-                <div className="report-section">
-                    <h3><Info size={20} color="#22c55e" /> Applicability</h3>
-                    <div className="applicability-box">
-                        <p style={{ fontSize: '0.95rem', color: '#166534' }}>{applicability}</p>
-                    </div>
+                {/* DISCLAIMER */}
+                <div className="disclaimer-box">
+                    <strong>DISCLAIMER:</strong> {disclaimer || "This report is informational guidance based on cited Central Acts only and is not legal advice. Verify all compliance decisions with a qualified legal professional."}
                 </div>
-            )}
-
-            {hasContent(key_points) && (
-                <div className="report-section">
-                    <h3><CheckCircle size={20} color="var(--accent-primary)" /> Key Findings</h3>
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {key_points.map((point, i) => (
-                            <li key={i} style={{ display: 'flex', gap: '10px', marginBottom: '12px', fontSize: '0.95rem' }}>
-                                <div style={{ color: '#22c55e', marginTop: '2px' }}>✓</div>
-                                <span>{point}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {hasContent(checklist) && (
-                <div className="report-section">
-                    <h3><CheckCircle size={20} color="var(--accent-primary)" /> Compliance Checklist</h3>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>Action Step</th>
-                                    <th>Timeline</th>
-                                    <th>Owner</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {checklist.map((item, i) => (
-                                    <tr key={i}>
-                                        <td>{item.step}</td>
-                                        <td>{item.timeline}</td>
-                                        <td>{item.owner}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {hasContent(citations) && (
-                <div className="report-section">
-                    <h3><ExternalLink size={20} color="var(--accent-primary)" /> Legal Citations</h3>
-                    {citations.map((cite, i) => (
-                        <div key={i} className="citation-card">
-                            <h4 style={{ fontSize: '0.95rem', color: '#1e40af', marginBottom: '4px' }}>
-                                {cite.title} {cite.year && `(${cite.year})`}
-                            </h4>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                                {cite.court} • {cite.relevance}
-                            </p>
-                            {hasContent(cite.url) && (
-                                <a href={cite.url} target="_blank" rel="noopener noreferrer"
-                                    style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    View Document <ExternalLink size={12} />
-                                </a>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {hasContent(assumptions) && (
-                <div className="report-section">
-                    <h3><AlertTriangle size={20} color="#f59e0b" /> Assumptions Made</h3>
-                    <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {assumptions.map((item, i) => (
-                            <li key={i} style={{ display: 'flex', gap: '10px', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                <div style={{ color: '#f59e0b' }}>⚠</div>
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            </div>
         </div>
     );
 };

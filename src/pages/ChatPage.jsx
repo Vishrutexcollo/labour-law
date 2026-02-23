@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, ChevronRight, Gavel, RefreshCw, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
 import LegalReport from '../components/LegalReport';
+import ReferenceChips from '../components/ReferenceChips';
 
 const ChatPage = () => {
     const [messages, setMessages] = useState([]);
@@ -49,6 +50,38 @@ const ChatPage = () => {
             if (current.output !== undefined) return deepUnwrap(current.output);
         }
         return current;
+    };
+
+    const parseChatAnswer = (content) => {
+        if (!content) return { main: '', url: null, disclaimer: null };
+
+        // Prioritize executive_summary if it exists (usually for report data)
+        // Otherwise use the answer field
+        let text = "";
+        if (typeof content === 'object') {
+            text = content.executive_summary || content.answer || (content.type === 'abusive_or_harmful' ? "Safety limit reached." : "");
+        } else {
+            text = content;
+        }
+
+        if (!text || typeof text !== 'string') return { main: text, url: null, disclaimer: null };
+
+        // Check for special web search format
+        if (!text.includes('Google URL:')) {
+            return { main: text, url: null, disclaimer: null };
+        }
+
+        const parts = text.split(/\nGoogle URL:|\nDisclaimer:/);
+        let main = parts[0].trim();
+        if (main.startsWith('Answer:')) {
+            main = main.substring(7).trim();
+        }
+
+        return {
+            main,
+            url: parts[1]?.trim() || null,
+            disclaimer: parts[2]?.trim() || null
+        };
     };
 
     const processQuery = async (queryText) => {
@@ -344,8 +377,8 @@ const ChatPage = () => {
                                                     </div>
                                                 ) : msg.viewMode === 'report' ? (
                                                     // Detailed Report View
-                                                    (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.key_points || msg.content.bare_act)) ? (
-                                                        <LegalReport data={msg.content} />
+                                                    (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.executive_summary || msg.content.at_a_glance)) ? (
+                                                        <LegalReport data={msg.content} originalQuery={msg.originalQuery} />
                                                     ) : (
                                                         <div style={{
                                                             display: 'inline-block',
@@ -374,12 +407,29 @@ const ChatPage = () => {
                                                         border: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '1px solid #fecaca' : '1px solid var(--border-color)',
                                                         whiteSpace: 'pre-wrap',
                                                         alignItems: 'center',
-                                                        gap: '12px'
+                                                        gap: '12px',
+                                                        width: '100%'
                                                     }}>
                                                         {typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful' && <AlertTriangle size={20} color="#dc2626" />}
-                                                        <span>
-                                                            {typeof msg.content === 'object' ? (msg.content.answer || (msg.content.type === 'abusive_or_harmful' ? "Safety limit reached." : "")) : msg.content}
-                                                        </span>
+
+                                                        {(() => {
+                                                            const parsed = parseChatAnswer(msg.content);
+                                                            return (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'flex-start' }}>
+                                                                    <span>{parsed.main}</span>
+                                                                    {parsed.url && (
+                                                                        <div style={{ marginTop: '12px' }}>
+                                                                            <ReferenceChips urls={[parsed.url]} />
+                                                                        </div>
+                                                                    )}
+                                                                    {parsed.disclaimer && (
+                                                                        <div className="web-search-disclaimer">
+                                                                            {parsed.disclaimer}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 )}
                                             </div>

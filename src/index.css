@@ -76,116 +76,219 @@ h4 {
 }
 
 /* Legal Report Styles */
+/* Report Theme Updates */
+:root {
+    --report-navy: #1e3a8a;
+    --report-teal: #0d9488;
+    --report-bg-muted: #f8fafc;
+    --report-border: #e2e8f0;
+}
+
 .report-container {
-    background: var(--bg-white);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 32px;
-    margin-top: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    background: #ffffff;
+    padding: 0;
+    /* Let inner spacing handle it */
+    border: none;
+    box-shadow: none;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.report-header {
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 16px;
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+.report-banner {
+    background-color: #1e3a8a;
+    color: white;
+    padding: 24px;
+    text-align: center;
+    border-radius: 4px 4px 0 0;
 }
 
-.report-section {
-    margin-bottom: 32px;
+.report-banner h1 {
+    color: white;
+    font-size: 1.5rem;
+    margin: 0;
+    letter-spacing: 0.05em;
+    font-weight: 700;
 }
 
-.report-section h3 {
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.badge {
-    padding: 4px 12px;
-    border-radius: 20px;
+.report-banner p {
     font-size: 0.75rem;
-    font-weight: 600;
+    margin-top: 4px;
+    opacity: 0.9;
     text-transform: uppercase;
 }
 
-.badge-high {
-    background: #dcfce7;
-    color: #166534;
+.report-metadata {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 20px 24px;
+    background: #fff;
+    border-bottom: 2px solid #1e3a8a;
+    font-size: 0.8rem;
 }
 
-.badge-medium {
-    background: #fef9c3;
-    color: #854d0e;
+.report-metadata item {
+    display: flex;
+    gap: 8px;
 }
 
-.badge-low {
-    background: #fee2e2;
-    color: #991b1b;
+.report-metadata label {
+    font-weight: 700;
+    min-width: 100px;
+}
+
+.report-body {
+    padding: 32px 24px;
+}
+
+.report-section {
+    margin-bottom: 40px;
+}
+
+.report-section h3 {
+    color: var(--report-teal);
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid #cbd5e1;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.report-section-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #334155;
+}
+
+/* Tables */
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+}
+
+.report-table th {
+    background-color: #1e3a8a;
+    color: white;
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    border: 1px solid #1e3a8a;
+}
+
+.report-table td {
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+/* Risk Cards */
+.risk-card {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.risk-card.high-risk {
+    background-color: #fef2f2;
+    border-left: 4px solid #dc2626;
+}
+
+.risk-card.med-risk {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+}
+
+.risk-label {
+    font-weight: 700;
+    color: #1e293b;
+    margin-right: 6px;
 }
 
 .info-box {
-    background: #f8fafc;
-    border-left: 4px solid var(--accent-primary);
-    padding: 16px;
-    border-radius: 4px;
+    background: white;
+    border: none;
+    padding: 0;
     font-size: 0.95rem;
     line-height: 1.6;
 }
 
-.applicability-box {
-    background: #f0fdf4;
-    border-left: 4px solid #22c55e;
-    padding: 16px;
-    border-radius: 4px;
-    margin-top: 12px;
+.warning-box {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: #92400e;
+    font-style: italic;
+    margin-top: 16px;
 }
 
-.report-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
+.citation-list {
+    list-style: none;
+    padding: 0;
+}
+
+.citation-item {
+    margin-bottom: 12px;
     font-size: 0.9rem;
 }
 
-.report-table th {
-    text-align: left;
-    padding: 12px;
-    background: #f3f4f6;
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.report-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.citation-card {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: transform 0.2s ease;
-}
-
-.citation-card:hover {
-    transform: translateX(4px);
-    border-color: var(--accent-primary);
-}
-
 .disclaimer-box {
-    background: #fffbeb;
-    border: 1px solid #fef3c7;
+    margin-top: 48px;
     padding: 16px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #92400e;
-    margin-top: 40px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* Reference Chips */
+.reference-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #475569;
+    text-decoration: none !important;
+    margin: 2px 4px 2px 0;
+    transition: all 0.2s;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.reference-chip:hover {
+    background-color: #e2e8f0;
+    border-color: #94a3b8;
+    color: #1e293b;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.reference-chip-icon {
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+}
+
+.web-search-disclaimer {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.4;
 }
