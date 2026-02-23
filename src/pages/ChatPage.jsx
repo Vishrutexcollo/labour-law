@@ -55,8 +55,6 @@ const ChatPage = () => {
     const parseChatAnswer = (content) => {
         if (!content) return { main: '', url: null, disclaimer: null };
 
-        // Prioritize executive_summary if it exists (usually for report data)
-        // Otherwise use the answer field
         let text = "";
         if (typeof content === 'object') {
             text = content.executive_summary || content.answer || (content.type === 'abusive_or_harmful' ? "Safety limit reached." : "");
@@ -66,22 +64,38 @@ const ChatPage = () => {
 
         if (!text || typeof text !== 'string') return { main: text, url: null, disclaimer: null };
 
-        // Check for special web search format
-        if (!text.includes('Google URL:')) {
-            return { main: text, url: null, disclaimer: null };
+        let main = text;
+        let url = null;
+        let disclaimer = null;
+
+        // 1. Extract Disclaimer if present at the end
+        const disclaimerMatch = main.match(/\n?Disclaimer:\s*([\s\S]+)$/i);
+        if (disclaimerMatch) {
+            disclaimer = disclaimerMatch[1].trim();
+            main = main.replace(disclaimerMatch[0], '').trim();
         }
 
-        const parts = text.split(/\nGoogle URL:|\nDisclaimer:/);
-        let main = parts[0].trim();
+        // 2. Extract PDF URL if present
+        const pdfMatch = main.match(/\n?PDF URL:\s*(https?:\/\/[^\s]+)/i);
+        if (pdfMatch) {
+            url = pdfMatch[1];
+            main = main.replace(pdfMatch[0], '').trim();
+        }
+
+        // 3. Extract Google URL if present (fallback)
+        if (!url) {
+            const googleMatch = main.match(/\n?Google URL:\s*(https?:\/\/[^\s]+)/i);
+            if (googleMatch) {
+                url = googleMatch[1];
+                main = main.replace(googleMatch[0], '').trim();
+            }
+        }
+
         if (main.startsWith('Answer:')) {
             main = main.substring(7).trim();
         }
 
-        return {
-            main,
-            url: parts[1]?.trim() || null,
-            disclaimer: parts[2]?.trim() || null
-        };
+        return { main, url, disclaimer };
     };
 
     const processQuery = async (queryText) => {

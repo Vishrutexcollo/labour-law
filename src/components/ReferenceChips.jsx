@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, FileText } from 'lucide-react';
 
 const ReferenceChips = ({ ids, urls, references }) => {
     if ((!ids || ids.length === 0) && (!urls || urls.length === 0)) return null;
@@ -28,14 +28,19 @@ const ReferenceChips = ({ ids, urls, references }) => {
             uniqueRefs.push(ref);
         } else {
             // Fallback for URLs not in the references array
-            uniqueRefs.push({ title: 'Source', url });
+            const isPdf = url.toLowerCase().includes('.pdf');
+            uniqueRefs.push({
+                title: isPdf ? 'PDF Reference' : 'Source',
+                url,
+                isPdf
+            });
         }
     });
 
     if (uniqueRefs.length === 0) return null;
 
     return (
-        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px', verticalAlign: 'middle', marginLeft: '6px' }}>
+        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px', verticalAlign: 'middle' }}>
             {uniqueRefs.map((ref, idx) => (
                 <a
                     key={idx}
@@ -44,9 +49,10 @@ const ReferenceChips = ({ ids, urls, references }) => {
                     rel="noopener noreferrer"
                     className="reference-chip"
                     onClick={(e) => e.stopPropagation()}
+                    title={ref.url}
                 >
                     <span className="reference-chip-icon">
-                        <ExternalLink size={10} />
+                        {ref.isPdf || ref.url?.toLowerCase().includes('.pdf') ? <FileText size={10} /> : <ExternalLink size={10} />}
                     </span>
                     {ref.title || 'Source'}
                 </a>
