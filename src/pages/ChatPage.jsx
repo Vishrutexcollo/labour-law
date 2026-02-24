@@ -127,10 +127,12 @@ const ChatPage = () => {
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
-                content: finalContent,
+                // Store content in the appropriate slot based on mode
+                chatContent: currentMode === 'chat' ? finalContent : null,
+                reportContent: currentMode === 'report' ? finalContent : null,
                 viewMode: currentMode,
                 originalQuery: queryText,
-                hasReportData: currentMode === 'report' // Set flag on creation
+                hasReportData: currentMode === 'report'
             }]);
         } catch (error) {
             console.error('Error:', error);
@@ -149,6 +151,14 @@ const ChatPage = () => {
     const handleSend = (e) => {
         e.preventDefault();
         processQuery(input);
+    };
+
+    // Helper to get the active content for a message based on its viewMode
+    const getActiveContent = (msg) => {
+        if (msg.viewMode === 'report' && msg.reportContent != null) return msg.reportContent;
+        if (msg.viewMode === 'chat' && msg.chatContent != null) return msg.chatContent;
+        // Fallback: return whichever is available
+        return msg.chatContent ?? msg.reportContent ?? null;
     };
 
     const toggleViewMode = async (messageId, mode) => {
@@ -177,18 +187,18 @@ const ChatPage = () => {
                     const finalContent = deepUnwrap(data);
                     setMessages(prev => prev.map(m => m.id === messageId ? {
                         ...m,
-                        content: finalContent,
+                        reportContent: finalContent,  // Store report data separately
                         isUpgrading: false,
-                        hasReportData: true // Mark as fetched permanently
+                        hasReportData: true
                     } : m));
                     return;
                 }
             } catch (e) {
                 console.error("Failed to upgrade message to report:", e);
             }
-            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isUpgrading: false } : m));
+            setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isUpgrading: false, viewMode: msg.chatContent != null ? 'chat' : msg.viewMode } : m));
         } else {
-            // If we have the data or are switching to chat, just toggle viewMode locally
+            // Just toggle viewMode locally — content is preserved in separate slots
             setMessages(prev => prev.map(m => m.id === messageId ? { ...m, viewMode: mode } : m));
         }
     };
@@ -390,61 +400,69 @@ const ChatPage = () => {
                                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Retrieving legal citations and precedents...</div>
                                                     </div>
                                                 ) : msg.viewMode === 'report' ? (
-                                                    // Detailed Report View
-                                                    (typeof msg.content === 'object' && msg.content && (msg.content.answer || msg.content.executive_summary || msg.content.at_a_glance)) ? (
-                                                        <LegalReport data={msg.content} originalQuery={msg.originalQuery} />
-                                                    ) : (
-                                                        <div style={{
-                                                            display: 'inline-block',
-                                                            backgroundColor: '#f8fafc',
-                                                            padding: '14px 20px',
-                                                            borderRadius: '4px 20px 20px 20px',
-                                                            color: 'var(--text-primary)',
-                                                            fontSize: '1rem',
-                                                            lineHeight: 1.6,
-                                                            border: '1px solid var(--border-color)',
-                                                            whiteSpace: 'pre-wrap'
-                                                        }}>
-                                                            {typeof msg.content === 'object' ? msg.content.answer : msg.content}
-                                                        </div>
-                                                    )
+                                                    // Detailed Report View — read from reportContent
+                                                    (() => {
+                                                        const rc = getActiveContent(msg);
+                                                        return (typeof rc === 'object' && rc && (rc.answer || rc.executive_summary || rc.at_a_glance)) ? (
+                                                            <LegalReport data={rc} originalQuery={msg.originalQuery} />
+                                                        ) : (
+                                                            <div style={{
+                                                                display: 'inline-block',
+                                                                backgroundColor: '#f8fafc',
+                                                                padding: '14px 20px',
+                                                                borderRadius: '4px 20px 20px 20px',
+                                                                color: 'var(--text-primary)',
+                                                                fontSize: '1rem',
+                                                                lineHeight: 1.6,
+                                                                border: '1px solid var(--border-color)',
+                                                                whiteSpace: 'pre-wrap'
+                                                            }}>
+                                                                {typeof rc === 'object' ? rc?.answer : rc}
+                                                            </div>
+                                                        );
+                                                    })()
                                                 ) : (
-                                                    // Simple Chat View
-                                                    <div style={{
-                                                        display: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? 'flex' : 'inline-block',
-                                                        backgroundColor: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '#fef2f2' : '#f8fafc',
-                                                        padding: '14px 20px',
-                                                        borderRadius: '4px 20px 20px 20px',
-                                                        color: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '#991b1b' : 'var(--text-primary)',
-                                                        fontSize: '1rem',
-                                                        lineHeight: 1.6,
-                                                        border: (typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful') ? '1px solid #fecaca' : '1px solid var(--border-color)',
-                                                        whiteSpace: 'pre-wrap',
-                                                        alignItems: 'center',
-                                                        gap: '12px',
-                                                        width: '100%'
-                                                    }}>
-                                                        {typeof msg.content === 'object' && msg.content && msg.content.type === 'abusive_or_harmful' && <AlertTriangle size={20} color="#dc2626" />}
+                                                    // Simple Chat View — read from chatContent
+                                                    (() => {
+                                                        const cc = getActiveContent(msg);
+                                                        return (
+                                                            <div style={{
+                                                                display: (typeof cc === 'object' && cc && cc.type === 'abusive_or_harmful') ? 'flex' : 'inline-block',
+                                                                backgroundColor: (typeof cc === 'object' && cc && cc.type === 'abusive_or_harmful') ? '#fef2f2' : '#f8fafc',
+                                                                padding: '14px 20px',
+                                                                borderRadius: '4px 20px 20px 20px',
+                                                                color: (typeof cc === 'object' && cc && cc.type === 'abusive_or_harmful') ? '#991b1b' : 'var(--text-primary)',
+                                                                fontSize: '1rem',
+                                                                lineHeight: 1.6,
+                                                                border: (typeof cc === 'object' && cc && cc.type === 'abusive_or_harmful') ? '1px solid #fecaca' : '1px solid var(--border-color)',
+                                                                whiteSpace: 'pre-wrap',
+                                                                alignItems: 'center',
+                                                                gap: '12px',
+                                                                width: '100%'
+                                                            }}>
+                                                                {typeof cc === 'object' && cc && cc.type === 'abusive_or_harmful' && <AlertTriangle size={20} color="#dc2626" />}
 
-                                                        {(() => {
-                                                            const parsed = parseChatAnswer(msg.content);
-                                                            return (
-                                                                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'flex-start' }}>
-                                                                    <span>{parsed.main}</span>
-                                                                    {parsed.url && (
-                                                                        <div style={{ marginTop: '12px' }}>
-                                                                            <ReferenceChips urls={[parsed.url]} />
+                                                                {(() => {
+                                                                    const parsed = parseChatAnswer(cc);
+                                                                    return (
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'flex-start' }}>
+                                                                            <span>{parsed.main}</span>
+                                                                            {parsed.url && (
+                                                                                <div style={{ marginTop: '12px' }}>
+                                                                                    <ReferenceChips urls={[parsed.url]} />
+                                                                                </div>
+                                                                            )}
+                                                                            {parsed.disclaimer && (
+                                                                                <div className="web-search-disclaimer">
+                                                                                    {parsed.disclaimer}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                    )}
-                                                                    {parsed.disclaimer && (
-                                                                        <div className="web-search-disclaimer">
-                                                                            {parsed.disclaimer}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                    </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                        );
+                                                    })()
                                                 )}
                                             </div>
                                         )}
