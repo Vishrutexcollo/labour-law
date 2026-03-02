@@ -4,7 +4,7 @@ import ReferenceChips from './ReferenceChips';
 
 const ReportSection = ({ id, title, children }) => (
     <div className="report-section">
-        <h3>SECTION {id} — {title}</h3>
+        <h3>{id}. {title}</h3>
         <div className="report-section-content">
             {children}
         </div>
